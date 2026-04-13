@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Real-time Audio Visualizer</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <canvas id="visualizer-canvas"></canvas>
+
+  <div class="menu-container">
+    <button id="menu-toggle" class="menu-toggle-btn">🎛️ Menu</button>
+    <nav class="app-menu hidden" id="app-menu">
+      <button class="nav-btn active" id="tab-live">🎧 Audio Visualizer</button>
+      <button class="nav-btn" id="tab-frequency">🎯 Freq Detector</button>
+      <div class="menu-divider"></div>
+      <button class="nav-btn" id="tab-recorded">📼 Recorded</button>
+      <div class="menu-divider"></div>
+      <button class="nav-btn" id="logout-btn" style="color: var(--danger);"><i data-lucide="log-out" style="width: 16px; height: 16px;"></i> Logout</button>
+    </nav>
+  </div>
+
+  <div class="ui-panel" id="main-ui">
+    <header>
+      <h1><i data-lucide="radio" class="icon"></i> Sonic Bloom</h1>
+      <p>Interactive Audio Visualizer</p>
+    </header>
+
+    <div class="controls">
+      <div class="control-group action-buttons">
+        <button id="start-btn" class="btn primary"><i data-lucide="mic"></i> Start Listening</button>
+        <button id="stop-btn" class="btn hidden"><i data-lucide="square"></i> Stop & Save</button>
+      </div>
+
+      <div class="control-group">
+        <label for="mode-select">Visualization Mode</label>
+        <select id="mode-select">
+          <option value="bars">Neon Bars</option>
+          <option value="radial">Smooth Radial Wave</option>
+        </select>
+      </div>
+      
+      <div class="control-group">
+        <label for="color-select">Color Theme</label>
+        <select id="color-select">
+          <option value="rainbow">Dynamic Rainbow</option>
+          <option value="cyberpunk">Cyberpunk (Pink/Blue)</option>
+          <option value="fire">Hellfire (Red/Yellow)</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label>AI Integations</label>
+        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; text-transform: none; color: var(--text-main); font-weight: normal; font-size: 0.95rem;">
+          <input type="checkbox" id="ai-subtitles-toggle" checked>
+          Enable AI Subtitles & Voice Commands
+        </label>
+      </div>
+    </div>
+    
+    <div id="status-message" class="status-msg">
+      Click 'Start Listening' and allow microphone access.
+    </div>
+  </div>
+
+  <div class="ui-panel hidden" id="frequency-panel">
+    <header>
+      <h1><i data-lucide="target" class="icon"></i> Freq Detector</h1>
+      <p>Auto-record at specific frequency</p>
+    </header>
+
+    <div class="controls">
+      <div class="control-group">
+        <label for="target-freq">Target Frequency (Hz)</label>
+        <input type="number" id="target-freq" value="440">
+      </div>
+      <div class="control-group">
+        <label for="freq-tolerance">Tolerance (± Hz)</label>
+        <input type="number" id="freq-tolerance" value="10">
+      </div>
+      <div class="control-group action-buttons">
+        <button id="start-freq-btn" class="btn primary"><i data-lucide="mic"></i> Start Detection</button>
+        <button id="stop-freq-btn" class="btn hidden"><i data-lucide="square"></i> Stop Detection</button>
+      </div>
+    </div>
+    
+    <div id="freq-status-message" class="status-msg">
+      Set a target and click Start Detection.
+    </div>
+    
+    <div id="quick-view-container" class="hidden" style="margin-top: 1rem; text-align: center; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">New session saved!</p>
+      <button id="quick-view-btn" class="btn" style="background: rgba(59, 130, 246, 0.2); border: 1px solid #3b82f6; color: #93c5fd;"><i data-lucide="eye"></i> View Last Detection</button>
+    </div>
+  </div>
+
+  <!-- Sessions Sidebar -->
+  <div id="sessions-panel" class="sessions-panel hidden">
+    <h3><i data-lucide="hard-drive" class="icon-small"></i> Saved Sessions</h3>
+    <ul id="session-list" class="session-list">
+      <li class="empty-msg">No recordings yet.</li>
+    </ul>
+  </div>
+
+  <!-- Review Mode Overlay -->
+  <div id="review-overlay" class="review-overlay hidden">
+    <h2><i data-lucide="eye"></i> Reviewing</h2>
+    <p id="review-title">Session Data</p>
+    <button id="ask-ai-btn" class="btn warning" style="background: rgba(139, 92, 246, 0.2); border: 1px solid var(--primary); color: #c084fc;"><i data-lucide="bot"></i> Ask AI</button>
+    <button id="exit-review-btn" class="btn primary"><i data-lucide="arrow-left"></i> Exit</button>
+  </div>
+
+  <!-- Physics Panel -->
+  <div id="physics-panel" class="physics-panel">
+    <h3>🔬 Live Physics</h3>
+    <div class="data-grid">
+      <div class="data-item">
+        <span class="label">📻 Frequency (f)</span>
+        <span id="freq-val" class="value">0 Hz</span>
+      </div>
+      <div class="data-item">
+        <span class="label">⚡ Photon Energy (E=hf)</span>
+        <span id="energy-val" class="value">0 J</span>
+      </div>
+      <div class="data-item">
+        <span class="label">📏 Wavelength (λ=c/f)</span>
+        <span id="wave-val" class="value">0 m</span>
+      </div>
+    </div>
+    
+    <h3 style="margin-top: 1.25rem; border-top: 1px solid var(--border-color); padding-top: 1rem;"><i data-lucide="cpu" class="icon-small"></i> Neural Analytics</h3>
+    <div class="data-grid" id="neural-analytics">
+      <div class="data-item">
+        <span class="label">Primary Audio Source</span>
+        <span id="ai-sound-class" class="value" style="color: #c084fc; font-size: 0.9rem;">Waiting...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Subtitles -->
+  <div id="ai-subtitles" class="ai-subtitles hidden"></div>
+
+  <!-- AI Insights Modal -->
+  <div id="insight-overlay" class="review-overlay hidden" style="top: 50%; transform: translate(-50%, -50%); border-radius: 16px; flex-direction: column; text-align: left; max-width: 500px; z-index: 100; box-shadow: 0 0 50px rgba(139, 92, 246, 0.6); padding: 2rem;">
+    <h2 style="margin-bottom: 1rem;"><i data-lucide="sparkles"></i> AI Deep Insights</h2>
+    <p id="insight-content" style="border: none; padding: 0; font-size: 0.95rem; line-height: 1.5; color: var(--text-muted); margin: 0 0 1.5rem 0;"></p>
+    <button id="close-insight-btn" class="btn primary" style="width: auto; align-self: flex-end;">Close</button>
+  </div>
+
+  <!-- Authentication Overlay -->
+  <div id="login-overlay" class="login-screen">
+    <div class="login-panel">
+      <h1><i data-lucide="radio" class="icon"></i> Sonic Bloom</h1>
+      <p>Secure Interface Access</p>
+      
+      <div class="control-group" style="margin-bottom: 1rem; text-align: left;">
+        <label for="login-account">Account Number</label>
+        <input type="text" id="login-account" placeholder="Enter Account (e.g. 2008)">
+      </div>
+      
+      <div class="control-group" style="margin-bottom: 1.5rem; text-align: left;">
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" placeholder="Enter Password">
+      </div>
+      
+      <button id="login-btn" class="btn primary">Authenticate <i data-lucide="chevron-right"></i></button>
+      <div id="login-error" class="status-msg hidden" style="margin-top: 1rem; color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">
+        Invalid credentials.
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
